@@ -83,27 +83,8 @@ def predict_gesture(video_path, reference_features, gesture_names):
         return None
 
 
-def main():
-    # Load reference features and gesture names from training data (replace with your loading logic)
-    reference_features = []  # Replace with your list of pre-computed features from training videos
-    gesture_names = []  # Replace with your list of corresponding gesture names for the training videos
-
-    # Process test videos
-    '''
-    with open("results.csv", "w") as f:
-        for filename in os.listdir("traindata/test"):
-            video_path = os.path.join("traindata/test", filename)
-            predicted_gesture = predict_gesture(video_path, reference_features, gesture_names)
-            f.write(f"{filename},{predicted_gesture}\n")
-            '''
-    with open("Results.csv", "w") as f:
-        for x in range(0, 51):
-
-    # Replace with your actual implementation if you have features and gesture names
-            f.write("dummy_video_name,dummy_gesture\n")  # Replace with placeholders
-
-    print("Results written to Results.csv")
-
-
 if __name__ == "__main__":
+    import os
+    import csv  # Import csv for result saving in Colab
+
     main()
