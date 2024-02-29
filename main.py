@@ -2,6 +2,8 @@ import cv2
 from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.preprocessing import image
 from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
 
 # Load pre-trained VGG16 model
 model = VGG16(weights="imagenet", include_top=False)  # Load without the top classification layers
