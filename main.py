@@ -101,9 +101,6 @@ def main():
 
     # Replace with your actual implementation if you have features and gesture names
             f.write("dummy_video_name,dummy_gesture\n")  # Replace with placeholders
-    
-    # Or, if you don't have model results:
-            f.write("This line tests the grading format.\n")
 
     print("Results written to Results.csv")
 
