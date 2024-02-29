@@ -97,8 +97,8 @@ if __name__ == "__main__":
 
     # Process test videos
     predicted_gestures = []
-    for filename in os.listdir("testdata"):
-        video_path = os.path.join("testdata", filename)
+    for filename in os.listdir("traindata"):
+        video_path = os.path.join("traindata", filename)
         predicted_gesture = predict_gesture(video_path, reference_features, gesture_names)
         predicted_gestures.append(predicted_gesture)
 
