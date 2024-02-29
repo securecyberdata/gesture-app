@@ -6,13 +6,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 # Load pre-trained VGG16 model
 model = VGG16(weights="imagenet", include_top=False)  # Load without the top classification layers
 
-def extract_features(video_path, use_opencv=False):
+def extract_features(video_path):
     """
-    Extracts features from the middle frame of a video using a pre-trained VGG16 model.
+    Extracts features from the middle frame of a video using a pre-trained VGG16 model and OpenCV.
 
     Args:
         video_path (str): Path to the video file.
-        use_opencv (bool, optional): Flag to use OpenCV for image manipulation instead of PIL. Defaults to False.
 
     Returns:
         np.ndarray: Flattened feature vector, or None if an error occurs.
@@ -34,33 +33,12 @@ def extract_features(video_path, use_opencv=False):
         print(f"Empty frame captured from video {video_path}. Skipping.")
         return None
 
-    # Convert BGR frame to RGB (if using OpenCV)
-    if use_opencv:
-        middle_frame = cv2.cvtColor(middle_frame, cv2.COLOR_BGR2RGB)
+    # Preprocess using OpenCV
+    middle_frame = cv2.resize(middle_frame, (224, 224))  # Resize to match VGG16 input size
+    middle_frame = cv2.cvtColor(middle_frame, cv2.COLOR_BGR2RGB)  # Convert to RGB
 
-    # Preprocess using PIL (if not using OpenCV)
-    else:
-        try:
-            from PIL import Image
-            temp_image_path = "temp_frame.jpg"
-            Image.fromarray(middle_frame).save(temp_image_path)
-
-    # Load the temporary image
-            img = image.load_img(temp_image_path, target_size=(224, 224))
-
-    # Check and handle dimensions if applicable
-            if img.ndim < 3:
-                img = np.expand_dims(img, axis=-1)
-            x = image.img_to_array(img)
-            x = np.expand_dims(x, axis=0)  # Add a batch dimension
-
-    # Remove temporary image file
-            os.remove(temp_image_path)
-
-        except (AttributeError, ModuleNotFoundError):  # Handle missing ndim attribute or PIL module
-            print("Error accessing image dimensions or PIL module not found. Using basic OpenCV preprocessing.")
-            middle_frame = cv2.resize(middle_frame, (224, 224))  # Resize to match VGG16 input size
-            x = np.expand_dims(middle_frame, axis=0)  # Add a batch dimension
+    # Convert to NumPy array and add batch dimension
+    x = np.expand_dims(middle_frame, axis=0)
 
     # Preprocess the image (resize, normalization) as needed for the model
     # ... (replace with your specific preprocessing steps) ...
@@ -68,14 +46,8 @@ def extract_features(video_path, use_opencv=False):
     # Extract features
     features = model.predict(x)
 
-    # Clean up resources if using PIL
-    if not use_opencv:
-        try:
-            os.remove(temp_image_path)
-        except FileNotFoundError:
-            pass  # Ignore error if temporary file already removed
-
     return features.flatten()  # Flatten the feature vector
+
 
 
 def main():
