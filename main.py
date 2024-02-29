@@ -90,6 +90,8 @@ def predict_gesture(video_path, reference_features, gesture_names):
 
 
 if __name__ == "__main__":
+    import csv
+    
     # Replace these placeholders with your actual implementations
     # - Load reference features and gesture names from training data
     reference_features = []
