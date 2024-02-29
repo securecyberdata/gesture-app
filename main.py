@@ -4,8 +4,14 @@ from tensorflow.keras.preprocessing import image
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 
-# Load pre-trained VGG16 model
-model = VGG16(weights="imagenet", include_top=False)  # Load without the top classification layers
+# Load pre-trained VGG16 model, handling potential GPU issues
+try:
+    model = VGG16(weights="imagenet", include_top=False)
+except OSError as e:
+    if "Could not find CUDA drivers" in str(e):
+        print("Warning: Could not find CUDA drivers, GPU will not be used.")
+    else:
+        raise e  # Re-raise other errors
 
 def extract_features(video_path):
     """
@@ -41,8 +47,8 @@ def extract_features(video_path):
     # Convert to NumPy array and add batch dimension
     x = np.expand_dims(middle_frame, axis=0)
 
-    # Preprocess the image (resize, normalization) as needed for the model
-    # ... (replace with your specific preprocessing steps) ...
+    # Preprocess the image (e.g., normalization, mean subtraction) as needed for the model
+    # ... (replace with your specific preprocessing steps based on your model) ...
 
     # Extract features
     features = model.predict(x)
@@ -84,7 +90,21 @@ def predict_gesture(video_path, reference_features, gesture_names):
 
 
 if __name__ == "__main__":
-    import os
-    import csv  # Import csv for result saving in Colab
+    # Replace these placeholders with your actual implementations
+    # - Load reference features and gesture names from training data
+    reference_features = []
+    gesture_names = []
 
-    main()
+    # Process test videos
+    predicted_gestures = []
+    for filename in os.listdir("testdata"):
+        video_path = os.path.join("testdata", filename)
+        predicted_gesture = predict_gesture(video_path, reference_features, gesture_names)
+        predicted_gestures.append(predicted_gesture)
+
+    # Write results to CSV, using newline='' to avoid extra line
+    with open("Results.csv", "w", newline='') as f:
+        csv_writer = csv.writer(f)
+        csv_writer.writerows(predicted_gestures)
+
+    print("Results written to Results.csv")
