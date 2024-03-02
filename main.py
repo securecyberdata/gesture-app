@@ -12,7 +12,7 @@ RESULTS_CSV = "Results.csv"  # Output file for recognized gestures
 
 # Function to generate training features using a pre-trained model (replace if needed)
 
-
+@tf.function(reduce_retracing=True)
 def extract_hand_shape_features(frame):
     """
     Extracts hand shape features from a given frame.
