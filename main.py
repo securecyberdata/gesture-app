@@ -1,112 +1,122 @@
-import cv2
-from tensorflow.keras.applications.vgg16 import VGG16
-from tensorflow.keras.preprocessing import image
-from sklearn.metrics.pairwise import cosine_similarity
 import os
+import cv2
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+import keras
+from keras.applications.vgg16 import VGG16, preprocess_input
 
-# Load pre-trained VGG16 model, handling potential GPU issues
-try:
-    model = VGG16(weights="imagenet", include_top=False)
-except OSError as e:
-    if "Could not find CUDA drivers" in str(e):
-        print("Warning: Could not find CUDA drivers, GPU will not be used.")
-    else:
-        raise e  # Re-raise other errors
+# Replace these paths with your actual file locations
+TRAIN_VIDEO_DIR = "traindata"  # Folder containing training videos
+TEST_VIDEO_DIR = "testdata"  # Folder containing test videos
+RESULTS_CSV = "Results.csv"  # Output file for recognized gestures
 
-def extract_features(video_path):
+# Function to generate training features using a pre-trained model (replace if needed)
+
+
+def extract_hand_shape_features(frame):
     """
-    Extracts features from the middle frame of a video using VGG16 and OpenCV.
+    Extracts hand shape features from a given frame.
 
     Args:
-        video_path (str): Path to the video file.
+        frame: A NumPy array representing the input frame.
 
     Returns:
-        np.ndarray: Flattened feature vector, or None if an error occurs.
+        A NumPy array containing the extracted hand shape features.
     """
 
+    # Load the VGG16 model using Keras
+    model = VGG16(weights='imagenet')
+
+    # Preprocess the frame
+    # Resize to 224x224 to match model input expectations
+    frame_resized = cv2.resize(frame, (224, 224))
+    # Reshape to BGR format for VGG16
+    frame_processed = preprocess_input(frame_resized[:, :, ::-1])
+    # Expand dimensions to create a batch of 1 image
+    frame_processed = np.expand_dims(frame_processed, axis=0)
+
+    # Extract features using model's predict method
+    feature_vector = model.predict(frame_processed)
+
+    # Flatten the feature vector
+    return feature_vector.flatten()
+
+
+
+# Function to process a video and extract its penultimate layer (feature vector)
+def process_video(video_path):
     cap = cv2.VideoCapture(video_path)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    middle_frame_index = total_frames // 2
 
-    cap.set(cv2.CAP_PROP_POS_FRAMES, middle_frame_index)
-    ret, middle_frame = cap.read()
+    # Initialize variables to store features and video length
+    features = []
+    num_frames = 0
 
-    if not ret:
-        print(f"Error reading frame from video {video_path}. Skipping.")
-        return None
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-    # Handle empty frames
-    if middle_frame is None:
-        print(f"Empty frame captured from video {video_path}. Skipping.")
-        return None
+        # Extract features from the middle frame (adjust as needed)
+        if num_frames == cap.get(cv2.CAP_PROP_FRAME_COUNT) // 2:
+            features.append(extract_hand_shape_features(frame))
 
-    # Preprocess using OpenCV
-    middle_frame = cv2.resize(middle_frame, (224, 224))  # Resize to match VGG16 input size
-    middle_frame = cv2.cvtColor(middle_frame, cv2.COLOR_BGR2RGB)  # Convert to RGB
+        num_frames += 1
 
-    # Convert to NumPy array and add batch dimension
-    x = np.expand_dims(middle_frame, axis=0)
+    cap.release()
 
-    # Preprocess the image (e.g., normalization, mean subtraction) as needed for the model
-    # ... (replace with your specific preprocessing steps based on your model) ...
+    # Ensure at least one frame was processed
+    if not features:
+        raise ValueError("No frames processed from video:", video_path)
 
-    # Extract features
-    features = model.predict(x)
+    # Return the feature vector as a NumPy array
+    return np.array(features).flatten()
 
-    return features.flatten()  # Flatten the feature vector
+# Function to perform gesture recognition using cosine similarity
+def recognize_gestures(test_features, train_features):
+    # Calculate cosine similarities between test features and each training feature
+    similarities = cosine_similarity(test_features.reshape(1, -1), train_features)
 
+    # Find the index of the most similar training feature
+    most_similar_idx = np.argmax(similarities)
 
-def predict_gesture(video_path, reference_features, gesture_names):
-    """
-    Predicts the gesture in a video based on the nearest neighbor approach with cosine similarity.
+    # Return the gesture label (replace with your actual mapping)
+    return most_similar_idx
 
-    Args:
-        video_path (str): Path to the video file.
-        reference_features (list): List of pre-computed features for reference videos.
-        gesture_names (list): List of corresponding gesture names for reference videos.
+def generate_train_features():
+    train_features = []
+    for video_name in os.listdir(TRAIN_VIDEO_DIR):
+        video_path = os.path.join(TRAIN_VIDEO_DIR, video_name)
+        features = process_video(video_path)
+        train_features.append(features)
 
-    Returns:
-        str: Predicted gesture name, or None if an error occurs.
-    """
+    train_features = np.array(train_features)
+    np.save("train_features.npy", train_features)
+
+# Check if training features file exists, generate if not
+if not os.path.exists("train_features.npy"):
+    generate_train_features()
+
+# Load training features
+train_features = np.load("train_features.npy")
+
+# Create the results CSV file (delete existing file if it exists)
+if os.path.exists(RESULTS_CSV):
+    os.remove(RESULTS_CSV)
+with open(RESULTS_CSV, "w", newline="") as f:
+    f.write("Video Name,Gesture Label\n")
+
+# Process each test video, recognize gestures, and save results
+for video_name in os.listdir(TEST_VIDEO_DIR):
+    video_path = os.path.join(TEST_VIDEO_DIR, video_name)
+    test_features = process_video(video_path)
 
     try:
-        # Extract features from the test video
-        test_features = extract_features(video_path)
-        if test_features is None:
-            return None
+        gesture_label = recognize_gestures(test_features, train_features)
+    except ValueError as e:
+        print(f"Error processing video: {video_name}, {e}")
+        gesture_label = -1  # Indicate error
 
-        # Calculate cosine similarities with each reference feature
-        similarities = cosine_similarity(test_features.reshape(1, -1), reference_features)
+    with open(RESULTS_CSV, "a", newline="") as f:
+        f.write(f"{video_name},{gesture_label}\n")
 
-        # Find the index of the most similar reference video
-        most_similar_index = np.argmax(similarities)
-
-        # Predict the gesture based on the index
-        return gesture_names[most_similar_index]
-
-    except Exception as e:
-        print(f"Error predicting gesture for video {video_path}: {e}")
-        return None
-
-
-if __name__ == "__main__":
-    import csv
-    
-    # Replace these placeholders with your actual implementations
-    # - Load reference features and gesture names from training data
-    reference_features = []
-    gesture_names = []
-
-    # Process test videos
-    predicted_gestures = []
-    for filename in os.listdir("traindata"):
-        video_path = os.path.join("traindata", filename)
-        predicted_gesture = predict_gesture(video_path, reference_features, gesture_names)
-        predicted_gestures.append(predicted_gesture)
-
-    # Write results to CSV, using newline='' to avoid extra line
-    with open("Results.csv", "w", newline='') as f:
-        csv_writer = csv.writer(f)
-        csv_writer.writerows(predicted_gestures)
-
-    print("Results written to Results.csv")
+print("Gesture recognition completed. Results saved to:", RESULTS_CSV)
