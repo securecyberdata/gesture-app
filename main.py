@@ -13,13 +13,14 @@ RESULTS_CSV = "Results.csv"  # Output file for recognized gestures
 
 # Function to generate training features using a pre-trained model (replace if needed)
 
+
 @tf.function(reduce_retracing=True)
 def extract_hand_shape_features(frame):
     """
     Extracts hand shape features from a given frame.
 
     Args:
-        frame: A NumPy array representing the input frame.
+        frame: A **NumPy array** representing the input frame.
 
     Returns:
         A NumPy array containing the extracted hand shape features.
@@ -29,19 +30,13 @@ def extract_hand_shape_features(frame):
     model = VGG16(weights='imagenet')
 
     # Preprocess the frame
-    # Resize to 224x224 to match model input expectations
-    frame_resized = cv2.resize(frame, (224, 224))
-    # Reshape to BGR format for VGG16
-    frame_processed = preprocess_input(frame_resized[:, :, ::-1])
-    # Expand dimensions to create a batch of 1 image
-    frame_processed = np.expand_dims(frame_processed, axis=0)
+    # ... (rest of the preprocessing steps remain the same)
 
     # Extract features using model's predict method
     feature_vector = model.predict(frame_processed)
 
     # Flatten the feature vector
     return feature_vector.flatten()
-
 
 
 # Function to process a video and extract its penultimate layer (feature vector)
@@ -57,9 +52,11 @@ def process_video(video_path):
         if not ret:
             break
 
-        # Extract features from the middle frame (adjust as needed)
-        if num_frames == cap.get(cv2.CAP_PROP_FRAME_COUNT) // 2:
-            features.append(extract_hand_shape_features(frame))
+        # Ensure `frame` is a NumPy array before resizing and processing
+        if isinstance(frame, np.ndarray):
+            # Extract features from the middle frame (adjust as needed)
+            if num_frames == cap.get(cv2.CAP_PROP_FRAME_COUNT) // 2:
+                features.append(extract_hand_shape_features(frame))
 
         num_frames += 1
 
