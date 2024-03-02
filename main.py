@@ -20,7 +20,7 @@ def extract_hand_shape_features(frame):
     Extracts hand shape features from a given frame.
 
     Args:
-        frame: A **NumPy array** representing the input frame.
+        frame: A NumPy array representing the input frame.
 
     Returns:
         A NumPy array containing the extracted hand shape features.
@@ -30,10 +30,11 @@ def extract_hand_shape_features(frame):
     model = VGG16(weights='imagenet')
 
     # Preprocess the frame
-    # ... (rest of the preprocessing steps remain the same)
+    frame_resized = cv2.resize(frame, (224, 224))  # Resized for model input
+    frame_processed = preprocess_input(frame_resized[:, :, ::-1])  # Preprocess
 
     # Extract features using model's predict method
-    feature_vector = model.predict(frame_processed)
+    feature_vector = model.predict(np.expand_dims(frame_processed, axis=0))  # Add batch dimension
 
     # Flatten the feature vector
     return feature_vector.flatten()
