@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import keras
 from keras.applications.vgg16 import VGG16, preprocess_input
-import tf as tensorflow
+import tensorflow as tf
 
 # Replace these paths with your actual file locations
 TRAIN_VIDEO_DIR = "traindata"  # Folder containing training videos
