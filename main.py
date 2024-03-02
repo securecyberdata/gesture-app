@@ -55,13 +55,14 @@ def process_video(video_path):
 
         # Ensure `frame` is a NumPy array before resizing and processing
         if isinstance(frame, np.ndarray):
+            features.append(extract_hand_shape_features(frame.copy))
             # Extract features from the middle frame (adjust as needed)
-            if num_frames == cap.get(cv2.CAP_PROP_FRAME_COUNT) // 2:
-                features.append(extract_hand_shape_features(frame))
+            #if num_frames == cap.get(cv2.CAP_PROP_FRAME_COUNT) // 2:
+                
 
         num_frames += 1
 
-    cap.release()
+        cap.release()
 
     # Ensure at least one frame was processed
     if not features:
